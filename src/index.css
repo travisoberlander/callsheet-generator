@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  background-color: #141517;
+  /* Subtle workspace grain so the charcoal isn't a flat fill */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+  color: #e9ebee;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin, dark scrollbars for the editor rail */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3f46 transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #3a3f46;
+  border-radius: 99px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Clapperboard diagonal stripe used in the document header */
+.clapper-stripe {
+  background-image: repeating-linear-gradient(
+    -55deg,
+    #16150f 0,
+    #16150f 13px,
+    #fbfaf7 13px,
+    #fbfaf7 26px
+  );
+}
+
+/* The document surface where the call sheet renders */
+.doc-surface {
+  background: var(--paper, #fbfaf7);
+  color: #16150f;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+/* ── Print: only the call sheet, fit to Letter ────────────────────────────── */
+@page {
+  size: letter portrait;
+  margin: 0.45in;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    background-image: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-root {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    display: block !important;
+    background: #fff !important;
+  }
+  /* The preview pane is responsively hidden on screen; always show it for print
+     and strip the dark workspace chrome so the page background stays white. */
+  .preview-pane {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .preview-pane > div {
+    max-width: none !important;
+  }
+  .print-area {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+  /* Avoid awkward breaks inside a row group */
+  tr,
+  .avoid-break {
+    break-inside: avoid;
+  }
+}
