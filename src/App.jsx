@@ -38,6 +38,21 @@ function setPath(obj, path, value) {
   return next;
 }
 
+// Normalize a freeform call time ("6:00A call", "6A", "07:00") to "HH:MM" for the
+// <input type="time"> field. Returns "" if it can't be parsed cleanly.
+function parseTime(raw) {
+  if (!raw) return "";
+  const ampm = String(raw).match(/(\d{1,2})(?::(\d{2}))?\s*([ap])/i);
+  if (ampm) {
+    let h = Number(ampm[1]) % 12;
+    if (/p/i.test(ampm[3])) h += 12;
+    return String(h).padStart(2, "0") + ":" + (ampm[2] || "00");
+  }
+  const h24 = String(raw).match(/^(\d{1,2}):(\d{2})$/);
+  if (h24) return h24[1].padStart(2, "0") + ":" + h24[2];
+  return "";
+}
+
 export default function App() {
   const [sheet, setSheet] = useState(() => {
     const saved = loadCurrent();
@@ -94,23 +109,47 @@ export default function App() {
     refreshDrafts();
   };
 
-  // Merge an imported shoot into the current sheet (non-destructive prefill)
-  const onPickShoot = (shoot) => {
+  // Merge a shoot into the current sheet (non-destructive prefill). Shared by the
+  // Notion import picker and the deep link from the SLATE production calendar.
+  const applyShoot = (shoot) => {
     setSheet((s) => {
-      const next = { ...s, production: { ...s.production }, locations: [...s.locations] };
+      const next = { ...s, production: { ...s.production }, times: { ...s.times }, locations: [...s.locations] };
       if (shoot.title) next.production.title = shoot.title;
       if (shoot.date) next.production.date = shoot.date;
       if (shoot.location) {
         next.locations = [{ ...next.locations[0], name: shoot.location }, ...next.locations.slice(1)];
       }
-      const extra = [shoot.type && `Type: ${shoot.type}`, shoot.talent && `Talent: ${shoot.talent}`]
+      let callNote = "";
+      if (shoot.call) {
+        const t = parseTime(shoot.call);
+        if (t) next.times.call = t;
+        else callNote = `Call: ${shoot.call}`;
+      }
+      const extra = [shoot.type && `Type: ${shoot.type}`, shoot.talent && `Talent: ${shoot.talent}`, callNote]
         .filter(Boolean)
         .join("\n");
       if (extra) next.notes = next.notes ? `${next.notes}\n${extra}` : extra;
       return next;
     });
+  };
+
+  const onPickShoot = (shoot) => {
+    applyShoot(shoot);
     setShowImport(false);
   };
+
+  // Deep link from the SLATE production calendar: #cs=<encoded shoot JSON>
+  useEffect(() => {
+    const m = window.location.hash.match(/cs=([^&]+)/);
+    if (!m) return;
+    try {
+      applyShoot(JSON.parse(decodeURIComponent(m[1])));
+    } catch {
+      /* ignore a malformed link */
+    }
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const doc = useMemo(() => <CallSheet sheet={sheet} />, [sheet]);
 
